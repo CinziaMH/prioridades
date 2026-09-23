@@ -55,7 +55,7 @@
   .foco .aviso { color: var(--tenue); align-self: center; }
 
   /* Bandeja sin clasificar */
-  .bandeja { padding: 10px 24px 0; }
+  .bandeja { padding: 0 24px 30px; }
   .bandeja.vacia { display: none; }
   .bandeja h2 { font: 600 16px "Barlow Condensed", Arial, sans-serif; color: var(--tenue); margin: 0 0 6px; }
   .bandeja .zona { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 8px; border: 1px dashed var(--linea); border-radius: 8px; }
@@ -229,7 +229,7 @@
     .plan { order: 1; }
     .cabecera > .nueva { order: 2; margin: 14px 14px 0; }
     .cabecera > .botonera { order: 3; margin: 10px 14px 0; }
-    .foco { order: 4; } .bandeja { order: 5; } .cuerpo { order: 6; }
+    .foco { order: 4; } .cuerpo { order: 5; } .bandeja { order: 6; }
     .cabecera { padding: 10px 14px; }
     h1 { font-size: 26px; }
     .nueva { flex-wrap: wrap; flex-basis: 100%; }
@@ -255,7 +255,12 @@
   .matriz { grid-template-rows: 20px auto auto; }
   .cuadrante { min-height: 240px; }
   .cuadrante .zona { overflow: visible; }
-  .cuerpo { padding-bottom: 40px; }
+  .cuerpo { padding-bottom: 24px; }
+  .proyecto { cursor: pointer; }
+  .proyecto.activo { box-shadow: inset 0 -3px 0 var(--q2); }
+  .proyecto.activo .nombre { color: var(--q2); }
+  .proyecto.apagado { opacity: .4; }
+  .foco .todos { align-self: center; background: none; border: 1px solid var(--linea); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--tenue); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -299,10 +304,6 @@
 
 <section class="foco" id="foco"></section>
 
-<section class="bandeja vacia" id="bandeja">
-  <h2>Sin clasificar: tocalas o arrastralas a un cuadrante</h2>
-  <div class="zona" data-q="0"></div>
-</section>
 
 <div class="cuerpo">
   <main class="matriz">
@@ -328,6 +329,11 @@
   </main>
 
 </div>
+
+<section class="bandeja vacia" id="bandeja">
+  <h2>Sin clasificar: tocalas o arrastralas a un cuadrante</h2>
+  <div class="zona" data-q="0"></div>
+</section>
 
 <dialog id="revision">
   <div class="rev">
@@ -457,6 +463,15 @@
 
 <script>
   var D = { tareas: [], proyectos: [], planes: {}, hoy: '', manana: '' };
+  // Filtro por proyecto: tocando un proyecto se ven solo sus tareas (se pueden elegir varios).
+  var filtro = {};
+  try { filtro = JSON.parse(localStorage.getItem('prio_filtro') || '{}'); } catch (e) {}
+  function hayFiltro() { return Object.keys(filtro).length > 0; }
+  function pasaFiltro(t) { return !hayFiltro() || !!filtro[t.proyecto]; }
+  function cambiarFiltro(id) {
+    if (filtro[id]) delete filtro[id]; else filtro[id] = true;
+    guardarLocal('prio_filtro', JSON.stringify(filtro)); pintar();
+  }
   var dia = new Date().getHours() >= 19 ? 'manana' : 'hoy';
   var DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   var COLOR = { 1: 'var(--q1)', 2: 'var(--q2)', 3: 'var(--q3)', 4: 'var(--q4)' };
@@ -505,8 +520,13 @@
       a.textContent = 'Sin foco definido. Abrí la revisión semanal y elegí hasta 8 proyectos.';
       f.appendChild(a); return;
     }
+    // descarta del filtro proyectos que ya no existen
+    Object.keys(filtro).forEach(function (id) { if (!proyecto(id)) delete filtro[id]; });
     D.proyectos.forEach(function (p) {
-      var el = document.createElement('div'); el.className = 'proyecto';
+      var el = document.createElement('div');
+      el.className = 'proyecto' + (filtro[p.id] ? ' activo' : (hayFiltro() ? ' apagado' : ''));
+      el.title = 'Tocá para ver solo las tareas de este proyecto';
+      el.onclick = function () { cambiarFiltro(p.id); };
       var pct = p.total ? Math.round(100 * p.hechas / p.total) : 0;
       el.innerHTML = '<div class="nombre"></div><div class="avance"></div><div class="barra"><i style="width:' + pct + '%"></i></div>';
       el.querySelector('.nombre').textContent = p.nombre;
@@ -518,13 +538,19 @@
       });
       f.appendChild(el);
     });
+    if (hayFiltro()) {
+      var todos = document.createElement('button');
+      todos.type = 'button'; todos.className = 'todos'; todos.textContent = 'Ver todos';
+      todos.onclick = function () { filtro = {}; guardarLocal('prio_filtro', '{}'); pintar(); };
+      f.appendChild(todos);
+    }
   }
 
   function pintarMatriz() {
     var enPlanHoy = D.planes[D.hoy] || [];
     [0, 1, 2, 3, 4].forEach(function (q) {
       var zona = document.querySelector('.zona[data-q="' + q + '"]'); zona.innerHTML = '';
-      var propias = D.tareas.filter(function (t) { return t.cuadrante === q; });
+      var propias = D.tareas.filter(function (t) { return t.cuadrante === q && pasaFiltro(t); });
       var pend = propias.filter(function (t) { return !t.hecha; })
         .sort(function (a, b) { return (a.vence || '9999') < (b.vence || '9999') ? -1 : 1; });
       var hechas = propias.filter(function (t) { return t.hecha; })
