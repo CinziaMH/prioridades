@@ -185,6 +185,14 @@
   html[data-tema="claro"] .encima { background-color: rgba(44,108,192,.06) !important; }
   html[data-tema="claro"] :focus-visible { outline-color: var(--q2); }
 
+
+  /* Día de la tarea: botones rápidos */
+  .dias { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+  .dia { background: transparent; border: 1px solid var(--linea); border-radius: 999px; padding: 4px 11px; font-size: 13px; color: var(--tenue); cursor: pointer; }
+  .dia[aria-pressed=true] { background: var(--texto); border-color: var(--texto); color: var(--fondo); font-weight: 600; }
+  html[data-tema="claro"] .dia[aria-pressed=true] { color: #fff; }
+  .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .nueva { flex-wrap: wrap; }
   #estado { position: fixed; right: 16px; bottom: 6px; color: var(--tenue); font-size: 12px; }
   #estado.error { color: var(--q1); }
 
@@ -246,7 +254,7 @@
   <h1>Tablero de prioridades</h1>
   <span class="fecha" id="fecha"></span>
   <form class="nueva" onsubmit="return agregar(event)">
-    <input class="campo" type="text" id="titulo" placeholder="Nueva tarea" aria-label="Nueva tarea" autocomplete="off">
+    <input class="campo" type="text" id="titulo" placeholder="Nueva tarea (podés escribir: mañana, el viernes, 30/9)" aria-label="Nueva tarea" autocomplete="off">
     <select class="campo" id="nCuadrante" aria-label="Cuadrante">
       <option value="1">Hacer hoy</option>
       <option value="2" selected>Planificar</option>
@@ -254,8 +262,9 @@
       <option value="4">Postergar</option>
     </select>
     <select class="campo" id="nProyecto" aria-label="Proyecto"></select>
-    <input class="campo" type="date" id="nFecha" aria-label="Fecha">
     <button class="boton" type="submit">Agregar</button>
+    <div class="dias" id="nDias" role="group" aria-label="Día de la tarea"></div>
+    <input type="date" id="nFecha" class="oculto" tabindex="-1" aria-hidden="true">
   </form>
   <div class="botonera">
     <button class="boton sec" type="button" onclick="abrirRevision()">Revisión semanal</button>
@@ -337,6 +346,9 @@
   <div class="rev hoja">
     <p class="titulo-t" id="aTitulo"></p>
     <p id="aDatos"></p>
+    <h3>Día</h3>
+    <div class="dias" id="aDias"></div>
+    <input type="date" id="aFecha" class="oculto" tabindex="-1" aria-hidden="true">
     <h3>Cuadrante</h3>
     <div class="opciones" id="aCuadrantes"></div>
     <h3>Proyecto</h3>
@@ -376,7 +388,7 @@
   /* ---------- Conexión con el servidor (Apps Script) ----------
      Imita google.script.run para que el resto del código no cambie. */
   var SERVIDOR = '';   // dirección /exec del Apps Script; si queda vacía se pide la primera vez
-  var FUNCIONES = ['datos', 'moverTarea', 'asignarProyecto', 'marcarTarea', 'agregarTarea', 'guardarPlan', 'guardarFoco', 'rendimiento'];
+  var FUNCIONES = ['datos', 'cambiarFecha', 'moverTarea', 'asignarProyecto', 'marcarTarea', 'agregarTarea', 'guardarPlan', 'guardarFoco', 'rendimiento'];
 
   function leerLocal(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function guardarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -642,11 +654,13 @@
   function agregar(e) {
     e.preventDefault();
     var titulo = $('titulo').value.trim();
+    var leido = leerDiaDelTitulo(titulo);
+    if (leido && leido.titulo) { titulo = leido.titulo; if (!fechaNueva) fechaNueva = leido.fecha; }
     if (!titulo) { $('titulo').focus(); return false; }
     estado('Agregando…');
     google.script.run.withSuccessHandler(function () {
-      $('titulo').value = ''; $('nFecha').value = ''; cargar();
-    }).withFailureHandler(fallo).agregarTarea(titulo, +$('nCuadrante').value, $('nFecha').value, '', $('nProyecto').value);
+      $('titulo').value = ''; elegirFechaNueva(''); cargar();
+    }).withFailureHandler(fallo).agregarTarea(titulo, +$('nCuadrante').value, fechaNueva, '', $('nProyecto').value);
     return false;
   }
 
@@ -698,6 +712,76 @@
   }
 
 
+
+
+  /* ---------- Día de la tarea ---------- */
+  var DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  var fechaNueva = '';
+
+  function isoDe(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function sumarDias(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return d; }
+
+  // Opciones rápidas: sin fecha, hoy, mañana y los días de la semana que siguen.
+  function opcionesDia() {
+    var ops = [['', 'Sin fecha'], [isoDe(sumarDias(0)), 'Hoy'], [isoDe(sumarDias(1)), 'Mañana']];
+    for (var i = 2; i <= 7; i++) {
+      var d = sumarDias(i);
+      ops.push([isoDe(d), DIAS[d.getDay()].charAt(0).toUpperCase() + DIAS[d.getDay()].slice(1) + ' ' + d.getDate()]);
+    }
+    return ops;
+  }
+
+  function pintarDias(caja, elegida, alElegir, selector) {
+    caja.innerHTML = '';
+    var ops = opcionesDia(), encontrada = false;
+    ops.forEach(function (o) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'dia'; b.textContent = o[1];
+      b.setAttribute('aria-pressed', o[0] === elegida);
+      if (o[0] === elegida) encontrada = true;
+      b.onclick = function () { alElegir(o[0]); };
+      caja.appendChild(b);
+    });
+    var otra = document.createElement('button');
+    otra.type = 'button'; otra.className = 'dia';
+    otra.textContent = (!encontrada && elegida) ? textoFecha(elegida) : 'Otra fecha';
+    otra.setAttribute('aria-pressed', !encontrada && !!elegida);
+    otra.onclick = function () {
+      var s = $(selector);
+      s.value = elegida || '';
+      s.onchange = function () { if (s.value) alElegir(s.value); };
+      try { s.showPicker(); } catch (e) { s.click(); }
+    };
+    caja.appendChild(otra);
+  }
+
+  function elegirFechaNueva(f) { fechaNueva = f; pintarDias($('nDias'), fechaNueva, elegirFechaNueva, 'nFecha'); }
+
+  // Entiende el día escrito al final del título: "hoy", "mañana", "pasado mañana", "el viernes", "30/9".
+  function leerDiaDelTitulo(texto) {
+    var t = texto.trim(), m, fecha = '';
+    var sinAcentos = function (s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); };
+    if ((m = t.match(/\s+(pasado\s+mañana|pasado\s+manana)$/i))) fecha = isoDe(sumarDias(2));
+    else if ((m = t.match(/\s+(hoy)$/i))) fecha = isoDe(sumarDias(0));
+    else if ((m = t.match(/\s+(mañana|manana)$/i))) fecha = isoDe(sumarDias(1));
+    else if ((m = t.match(/\s+(?:el\s+|este\s+|para\s+el\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)$/i))) {
+      var buscado = DIAS_LARGOS.map(sinAcentos).indexOf(sinAcentos(m[1]));
+      for (var i = 1; i <= 7; i++) { var d = sumarDias(i); if (d.getDay() === buscado) { fecha = isoDe(d); break; } }
+    } else if ((m = t.match(/\s+(?:el\s+|para\s+el\s+)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/))) {
+      var hoy = sumarDias(0), anio = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : hoy.getFullYear();
+      var d2 = new Date(anio, +m[2] - 1, +m[1], 12);
+      if (!m[3] && d2 < sumarDias(-1)) d2.setFullYear(anio + 1);
+      if (d2.getDate() === +m[1]) fecha = isoDe(d2);
+    }
+    if (!fecha) return null;
+    return { titulo: t.slice(0, t.length - m[0].length).trim(), fecha: fecha };
+  }
+
+  $('titulo').addEventListener('input', function () {
+    var r = leerDiaDelTitulo($('titulo').value);
+    if (r && r.fecha !== fechaNueva) elegirFechaNueva(r.fecha);
+  });
+  elegirFechaNueva('');
 
   /* ---------- Agenda de Google Calendar ---------- */
   function pintarAgenda() {
@@ -752,6 +836,12 @@
     var t = tarea(abierta); if (!t) return;
     $('aTitulo').textContent = t.titulo;
     $('aDatos').textContent = (t.hecha ? 'Hecha' : 'Pendiente') + (t.vence ? ', fecha ' + textoFecha(t.vence) : ', sin fecha') + (t.nota ? '. ' + t.nota : '');
+
+    pintarDias($('aDias'), t.vence || '', function (f) {
+      if ((t.vence || '') === f) return;
+      t.vence = f; pintar(); pintarAcciones();
+      llamar('cambiarFecha', [t.id, f]);
+    }, 'aFecha');
 
     var c = $('aCuadrantes'); c.innerHTML = '';
     [1, 2, 3, 4].forEach(function (q) {
