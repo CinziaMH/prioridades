@@ -404,6 +404,14 @@
   function guardarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function conexion() { return { url: SERVIDOR || leerLocal('prio_servidor'), clave: leerLocal('prio_clave') }; }
 
+  // Se puede fijar la clave desde la dirección: .../prioridades/?clave=1145 (después se borra de la barra).
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.get('clave')) { guardarLocal('prio_clave', q.get('clave')); history.replaceState(null, '', location.pathname); }
+    } catch (e) {}
+  })();
+
   function pedirConexion() {
     var d = document.getElementById('conexion');
     if (d.open) return;
@@ -992,6 +1000,9 @@
     var guardado = JSON.parse(leerLocal('prio_datos') || 'null');
     if (guardado && guardado.tareas) { D = guardado; pintar(); estado('Actualizando…'); }
   } catch (e) {}
+  $('estado').title = 'Tocá acá para cambiar la clave';
+  $('estado').style.cursor = 'pointer';
+  $('estado').onclick = pedirConexion;
   cargar();
   setInterval(function () { if (!document.querySelector('dialog[open]')) cargar(); }, 60000);   // se sincroniza solo cada minuto con lo que tildes en Google Tareas
 </script>
