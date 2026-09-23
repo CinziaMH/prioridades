@@ -264,6 +264,10 @@
   .proyecto.activo { box-shadow: inset 0 -3px 0 var(--q2); }
   .proyecto.activo .nombre { color: var(--q2); }
   .proyecto.apagado { opacity: .4; }
+  .proyecto.dormido { background: #fff4df !important; border-radius: 8px; }
+  .proyecto.dormido .nombre, .proyecto.dormido .avance { color: #a56a00; font-weight: 600; }
+  html[data-tema="noche"] .proyecto.dormido { background: #3a2e14 !important; }
+  html[data-tema="noche"] .proyecto.dormido .nombre, html[data-tema="noche"] .proyecto.dormido .avance { color: #f0b54a; }
   .foco .todos { align-self: center; background: none; border: 1px solid var(--linea); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--tenue); cursor: pointer; }
 </style>
 </head>
@@ -528,13 +532,19 @@
     Object.keys(filtro).forEach(function (id) { if (!proyecto(id)) delete filtro[id]; });
     D.proyectos.forEach(function (p) {
       var el = document.createElement('div');
-      el.className = 'proyecto' + (filtro[p.id] ? ' activo' : (hayFiltro() ? ' apagado' : ''));
+      // Una semana sin terminar ninguna tarea del proyecto: se marca para que no quede olvidado.
+      var desde = p.ultimaHecha && p.ultimaHecha > (p.creado || '') ? p.ultimaHecha : (p.creado || D.hoy);
+      var diasQuieto = Math.floor((new Date(D.hoy + 'T12:00:00') - new Date(desde + 'T12:00:00')) / 864e5);
+      var dormido = diasQuieto >= 7;
+      el.className = 'proyecto' + (dormido ? ' dormido' : '') + (filtro[p.id] ? ' activo' : (hayFiltro() ? ' apagado' : ''));
       el.title = 'Tocá para ver solo las tareas de este proyecto';
       el.onclick = function () { cambiarFiltro(p.id); };
       var pct = p.total ? Math.round(100 * p.hechas / p.total) : 0;
       el.innerHTML = '<div class="nombre"></div><div class="avance"></div><div class="barra"><i style="width:' + pct + '%"></i></div>';
       el.querySelector('.nombre').textContent = p.nombre;
-      el.querySelector('.avance').textContent = p.total ? p.hechas + ' de ' + p.total + ' tareas hechas' : 'Sin tareas: arrastrá una acá para vincularla';
+      el.querySelector('.avance').textContent = dormido
+        ? diasQuieto + ' días sin avances'
+        : (p.total ? p.hechas + ' de ' + p.total + ' tareas hechas' : 'Sin tareas: arrastrá una acá para vincularla');
       soltable(el, function (id) {
         var t = tarea(id); if (!t || t.proyecto === p.id) return;
         t.proyecto = p.id; p.total++; if (t.hecha) p.hechas++; pintar();
