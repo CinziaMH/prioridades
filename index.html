@@ -433,7 +433,7 @@
         var args = Array.prototype.slice.call(arguments), c = conexion();
         if (!c.url || !c.clave) { pedirConexion(); alFallar(new Error('Falta conectar el tablero')); return; }
         fetch(c.url + '?clave=' + encodeURIComponent(c.clave) + '&funcion=' + encodeURIComponent(nombre) +
-              '&args=' + encodeURIComponent(JSON.stringify(args)))
+              '&args=' + encodeURIComponent(JSON.stringify(args)) + '&_=' + Date.now(), { cache: 'no-store' })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             if (j.ok) { alTerminar(j.resultado); return; }
