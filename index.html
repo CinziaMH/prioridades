@@ -352,7 +352,7 @@
     <div id="revHechas"></div>
 
     <h3>Proyectos en curso</h3>
-    <p>Hasta 8 proyectos. Si borrás un nombre, ese proyecto se cierra y sus tareas quedan en el tablero.</p>
+    <p>Hasta 12 proyectos. Si borrás un nombre, ese proyecto se cierra y sus tareas quedan en el tablero.</p>
     <div id="revFoco"></div>
 
     <h3>Importantes sin fecha</h3>
@@ -525,7 +525,7 @@
     var h = document.createElement('h2'); h.textContent = 'Proyectos en curso'; f.appendChild(h);
     if (!D.proyectos.length) {
       var a = document.createElement('span'); a.className = 'aviso';
-      a.textContent = 'Sin foco definido. Abrí la revisión semanal y elegí hasta 8 proyectos.';
+      a.textContent = 'Sin foco definido. Abrí la revisión semanal y elegí hasta 12 proyectos.';
       f.appendChild(a); return;
     }
     // descarta del filtro proyectos que ya no existen
@@ -747,7 +747,7 @@
     }
 
     var f = $('revFoco'); f.innerHTML = '';
-    for (var i = 0; i < Math.min(8, D.proyectos.length + 2); i++) {
+    for (var i = 0; i < Math.min(12, D.proyectos.length + 2); i++) {
       var p = D.proyectos[i];
       var fila = document.createElement('div'); fila.className = 'fila';
       var inp = document.createElement('input'); inp.className = 'campo';
