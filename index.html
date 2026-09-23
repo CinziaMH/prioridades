@@ -495,15 +495,23 @@
   }
   function estado(txt, error) { $('estado').textContent = txt; $('estado').className = error ? 'error' : ''; }
   function fallo(err) { estado('No se pudo conectar con Google Tareas: ' + (err && err.message || err), true); cargar(); }
+  // Los cambios se ven al instante y se guardan de fondo. Mientras haya guardados en curso,
+  // la actualización automática no pisa lo que ya se ve en pantalla.
+  var enCurso = 0;
   function llamar(fn, args, alTerminar) {
+    enCurso++;
     estado('Guardando…');
-    var r = google.script.run.withSuccessHandler(function (x) { estado('Guardado'); if (alTerminar) alTerminar(x); }).withFailureHandler(fallo);
+    var r = google.script.run
+      .withSuccessHandler(function (x) { enCurso--; if (!enCurso) estado('Guardado'); if (alTerminar) alTerminar(x); })
+      .withFailureHandler(function (e) { enCurso--; fallo(e); });
     r[fn].apply(r, args);
   }
 
   /* ---------- Carga ---------- */
   function cargar() {
+    if (enCurso) return;
     google.script.run.withSuccessHandler(function (datos) {
+      if (enCurso) return;
       D = datos; pintar();
       guardarLocal('prio_datos', JSON.stringify(datos));
       var d = new Date();
