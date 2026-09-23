@@ -44,7 +44,8 @@
   .resumen b { color: var(--texto); font-weight: 600; }
 
   /* Foco de la semana */
-  .foco { display: flex; align-items: stretch; gap: 14px; padding: 12px 24px 0; }
+  .foco { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 14px; padding: 12px 24px 0; }
+  .foco .proyecto { flex: 1 1 170px; }
   .foco h2 { font: 700 20px/1.1 "Barlow Condensed", Arial, sans-serif; margin: 0; width: 90px; flex: none; align-self: center; }
   .proyecto { flex: 1; background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 10px 14px; }
   .proyecto .nombre { font: 600 20px/1.1 "Barlow Condensed", Arial, sans-serif; }
@@ -328,8 +329,8 @@
     <h3>Lo que se hizo en los últimos 7 días</h3>
     <div id="revHechas"></div>
 
-    <h3>Foco de la semana que viene</h3>
-    <p>Hasta 4 proyectos. Si borrás un nombre, ese proyecto se cierra y sus tareas quedan en el tablero.</p>
+    <h3>Proyectos en curso</h3>
+    <p>Hasta 8 proyectos. Si borrás un nombre, ese proyecto se cierra y sus tareas quedan en el tablero.</p>
     <div id="revFoco"></div>
 
     <h3>Importantes sin fecha</h3>
@@ -481,10 +482,10 @@
 
   function pintarFoco() {
     var f = $('foco'); f.innerHTML = '';
-    var h = document.createElement('h2'); h.textContent = 'Foco de la semana'; f.appendChild(h);
+    var h = document.createElement('h2'); h.textContent = 'Proyectos en curso'; f.appendChild(h);
     if (!D.proyectos.length) {
       var a = document.createElement('span'); a.className = 'aviso';
-      a.textContent = 'Sin foco definido. Abrí la revisión semanal y elegí hasta 4 proyectos.';
+      a.textContent = 'Sin foco definido. Abrí la revisión semanal y elegí hasta 8 proyectos.';
       f.appendChild(a); return;
     }
     D.proyectos.forEach(function (p) {
@@ -682,7 +683,7 @@
     }
 
     var f = $('revFoco'); f.innerHTML = '';
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < Math.min(8, D.proyectos.length + 2); i++) {
       var p = D.proyectos[i];
       var fila = document.createElement('div'); fila.className = 'fila';
       var inp = document.createElement('input'); inp.className = 'campo';
