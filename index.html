@@ -88,6 +88,8 @@
   .tarjeta .datos { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--tenue); font-size: 13px; }
   .tarjeta .vencida { color: var(--alerta); font-weight: 600; }
   .tarjeta .en-plan { color: var(--ok); }
+  .tarjeta .proy { color: var(--texto); font-weight: 600; }
+  .tarjeta .sinp { font-style: italic; }
   .tarjeta.hecha { opacity: .5; }
   .tarjeta.hecha .titulo { text-decoration: line-through; }
   .hechas-sep { color: var(--tenue); font-size: 13px; margin: 6px 2px 0; }
@@ -582,7 +584,7 @@
 
     var datos = [];
     var p = t.proyecto && proyecto(t.proyecto);
-    if (p) datos.push(['', p.nombre]);
+    datos.push(p ? ['proy', p.nombre] : ['sinp', 'Sin proyecto']);
     if (t.vence) {
       if (!t.hecha && t.vence < D.hoy) datos.push(['vencida', 'Vencida ' + textoFecha(t.vence)]);
       else datos.push(['', t.vence === D.hoy ? 'Hoy' : textoFecha(t.vence)]);
@@ -829,9 +831,17 @@
   elegirFechaNueva('');
 
   /* ---------- Agenda de Google Calendar ---------- */
+  // Mismo nombre sin la hora adelante: "09:00 Armar ficha" = "Armar ficha".
+  function base(s) { return String(s || '').replace(/^\d{1,2}:\d{2}\s+/, '').trim().toLowerCase(); }
+  function tareaDelEvento(ev) {
+    var b = base(ev.titulo);
+    return D.tareas.find(function (t) { return !t.hecha && base(t.titulo) === b; }) ||
+           D.tareas.find(function (t) { return base(t.titulo) === b; });
+  }
   function pintarAgenda() {
     var caja = $('agenda'); caja.innerHTML = '';
-    var eventos = (D.agenda && D.agenda[fechaDia()]) || [];
+    // Los eventos que ya son tareas del tablero no se repiten en la agenda.
+    var eventos = ((D.agenda && D.agenda[fechaDia()]) || []).filter(function (ev) { return !tareaDelEvento(ev); });
     if (!eventos.length) return;
     var h = document.createElement('h3'); h.textContent = 'Agenda del calendario'; caja.appendChild(h);
     eventos.forEach(function (ev) {
@@ -851,6 +861,8 @@
     var fecha = fechaDia();
     var ids = (D.planes[fecha] || []).slice();
     if (ids.length >= MAX_PLAN) { estado('El plan ya tiene 6 tareas: sacá una antes de sumar otra.', true); return; }
+    var existente = tareaDelEvento(ev);
+    if (existente) { if (ids.indexOf(existente.id) === -1) cambiarPlan(fecha, ids.concat([existente.id])); return; }
     var titulo = (ev.hora ? ev.hora + ' ' : '') + ev.titulo;
     boton.disabled = true; estado('Agregando…');
     google.script.run.withSuccessHandler(function (t) {
