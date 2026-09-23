@@ -466,6 +466,7 @@
   function cargar() {
     google.script.run.withSuccessHandler(function (datos) {
       D = datos; pintar();
+      guardarLocal('prio_datos', JSON.stringify(datos));
       var d = new Date();
       estado('Actualizado ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'));
     }).withFailureHandler(function (err) { estado('No se pudo conectar con Google Tareas: ' + (err && err.message || err), true); }).datos();
@@ -978,6 +979,11 @@
   }
   ponerNombreTema();
 
+  // Muestra al instante lo último que se vio, mientras trae lo nuevo.
+  try {
+    var guardado = JSON.parse(leerLocal('prio_datos') || 'null');
+    if (guardado && guardado.tareas) { D = guardado; pintar(); estado('Actualizando…'); }
+  } catch (e) {}
   cargar();
   setInterval(function () { if (!document.querySelector('dialog[open]')) cargar(); }, 60000);   // se sincroniza solo cada minuto con lo que tildes en Google Tareas
 </script>
