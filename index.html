@@ -11,7 +11,8 @@
 <title>Tablero de prioridades</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231d262d'/><rect x='12' y='12' width='36' height='36' rx='5' fill='%23e2583d'/><rect x='52' y='12' width='36' height='36' rx='5' fill='%234ea3dc'/><rect x='12' y='52' width='36' height='36' rx='5' fill='%23e3a53b'/><rect x='52' y='52' width='36' height='36' rx='5' fill='%2387939c'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<script>try{document.documentElement.dataset.tema=localStorage.getItem('prio_tema')||'claro'}catch(e){}</script>
 <style>
   :root {
     --fondo: #1d262d; --panel: #242f37; --linea: #33414b; --texto: #e7ecef; --tenue: #8fa0ab;
@@ -23,7 +24,7 @@
     padding-top: env(safe-area-inset-top, 0px);
     background: var(--fondo); color: var(--texto);
     font: 16px/1.4 Barlow, "Segoe UI", Arial, sans-serif;
-    display: grid; grid-template-rows: auto auto auto 1fr; height: 100vh;
+    display: grid; grid-template-rows: auto auto auto auto 1fr; height: 100vh;
   }
   button, input, select { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--q2); outline-offset: 2px; }
@@ -38,6 +39,7 @@
   .campo { background: var(--panel); border: 1px solid var(--linea); border-radius: 6px; padding: 7px 10px; }
   .boton { background: var(--q2); color: #0e1a22; border: 0; border-radius: 6px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
   .boton.sec { background: transparent; color: var(--texto); border: 1px solid var(--linea); }
+  .botonera { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
   .resumen { color: var(--tenue); font-size: 15px; }
   .resumen b { color: var(--texto); font-weight: 600; }
 
@@ -59,7 +61,7 @@
   .bandeja .tarjeta { flex: 0 1 320px; }
 
   /* Cuerpo: matriz + plan del día */
-  .cuerpo { display: grid; grid-template-columns: 1fr 360px; gap: 16px; padding: 12px 24px 20px; min-height: 0; }
+  .cuerpo { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 12px 24px 20px; min-height: 0; }
   .matriz { display: grid; gap: 12px; min-height: 0; grid-template-columns: 24px 1fr 1fr; grid-template-rows: 20px 1fr 1fr; }
   .eje { color: var(--tenue); font: 600 15px "Barlow Condensed", Arial, sans-serif; display: flex; align-items: center; justify-content: center; }
   .eje.v { writing-mode: vertical-rl; transform: rotate(180deg); }
@@ -90,7 +92,10 @@
   .hechas-sep { color: var(--tenue); font-size: 13px; margin: 6px 2px 0; }
   .vacio { color: var(--tenue); font-size: 14px; padding: 6px 2px; }
 
-  /* Plan del día */
+  /* Prioridades del día: franja arriba de todo */
+  .plan { margin: 12px 24px 0; display: grid !important; grid-template-columns: 300px 1fr; gap: 10px 22px; padding: 14px 18px 16px; align-items: start; }
+  .plan .tope { padding: 0 !important; }
+  .plan ol { padding: 0 !important; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; overflow: visible !important; }
   .plan { background: var(--panel); border-radius: 10px; border-top: 5px solid var(--ok); display: flex; flex-direction: column; min-height: 0; }
   .plan .tope { padding: 10px 14px 6px; }
   .plan h2 { font: 700 26px/1 "Barlow Condensed", Arial, sans-serif; margin: 0 0 8px; }
@@ -127,6 +132,59 @@
   .rev .fila input { flex: 1; }
   .rev .acciones { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
+
+  /* ---------- Tema claro minimalista ---------- */
+  html[data-tema="claro"] {
+    --fondo: #ffffff; --panel: #ffffff; --linea: #e7e9ec; --texto: #1c2024; --tenue: #7a828a;
+    --q1: #d4452f; --q2: #2c6cc0; --q3: #c7870f; --q4: #8d959c; --ok: #2f8f5b;
+  }
+  html[data-tema="claro"] body { font-family: Archivo, "Segoe UI", Arial, sans-serif; background: #f6f7f8; }
+  html[data-tema="claro"] h1, html[data-tema="claro"] h2, html[data-tema="claro"] h3,
+  html[data-tema="claro"] .cond, html[data-tema="claro"] .cuenta, html[data-tema="claro"] .eje,
+  html[data-tema="claro"] .proyecto .nombre, html[data-tema="claro"] .plan li .num,
+  html[data-tema="claro"] .evento .hora, html[data-tema="claro"] .cifra b {
+    font-family: Archivo, "Segoe UI", Arial, sans-serif !important; letter-spacing: -.01em; word-spacing: .06em;
+  }
+  html[data-tema="claro"] h1 { font-size: 22px; font-weight: 700; }
+  html[data-tema="claro"] .cabecera { background: #fff; border-bottom: 1px solid var(--linea); }
+  html[data-tema="claro"] .campo { background: #f6f7f8; border-color: var(--linea); }
+  html[data-tema="claro"] .boton { background: var(--texto); color: #fff; font-weight: 600; }
+  html[data-tema="claro"] .boton.sec { background: transparent; color: var(--texto); border-color: var(--linea); font-weight: 500; }
+
+  html[data-tema="claro"] .plan { background: #fff; border: 1px solid var(--linea); border-top: 0; border-radius: 12px; box-shadow: 0 1px 2px rgba(28,32,36,.04); }
+  html[data-tema="claro"] .plan h2 { font-size: 24px; font-weight: 700; }
+  html[data-tema="claro"] .pestanas button { background: #fff; border-color: var(--linea); }
+  html[data-tema="claro"] .pestanas button[aria-pressed=true] { background: var(--texto); color: #fff; border-color: var(--texto); }
+  html[data-tema="claro"] .plan li .num { font-size: 22px; font-weight: 300; color: #b3b9bf; }
+  html[data-tema="claro"] .plan li.ahora .num { color: var(--texto); font-weight: 700; }
+  html[data-tema="claro"] .plan li.ahora .tarjeta { border-color: var(--texto); box-shadow: none; }
+  html[data-tema="claro"] .plan .libre { border-color: var(--linea); background: #fafbfb; }
+  html[data-tema="claro"] .evento { background: #fafbfb; border-color: var(--linea); }
+  html[data-tema="claro"] .evento .hora { color: var(--texto); font-size: 16px; font-weight: 600; }
+
+  html[data-tema="claro"] .foco h2 { font-size: 15px; font-weight: 600; color: var(--tenue); }
+  html[data-tema="claro"] .proyecto { background: transparent; border: 0; border-left: 1px solid var(--linea); border-radius: 0; padding: 4px 14px; }
+  html[data-tema="claro"] .proyecto .nombre { font-size: 16px; font-weight: 600; }
+  html[data-tema="claro"] .barra { height: 4px; background: #eceef0; }
+  html[data-tema="claro"] .mini { background: #eceef0; }
+
+  html[data-tema="claro"] .cuadrante { background: #fff; border: 1px solid var(--linea); border-top: 3px solid var(--color); border-radius: 12px; }
+  html[data-tema="claro"] .cuadrante.q2 { background: #fff; box-shadow: none; border-color: #cddcf0; border-top-color: var(--q2); }
+  html[data-tema="claro"] .cuadrante h2 { font-size: 20px; font-weight: 700; }
+  html[data-tema="claro"] .cuadrante .cuenta { font-size: 18px; font-weight: 500; color: var(--tenue); }
+  html[data-tema="claro"] .eje { font-size: 13px; font-weight: 500; }
+
+  html[data-tema="claro"] .tarjeta { background: #fff; border: 1px solid var(--linea); border-left: 3px solid var(--color, var(--tenue)); border-radius: 8px; }
+  html[data-tema="claro"] .tarjeta .titulo { font-size: 16px; }
+  html[data-tema="claro"] .bandeja .zona { border-color: var(--linea); }
+
+  html[data-tema="claro"] .cifra, html[data-tema="claro"] .opciones button { background: #fff; }
+  html[data-tema="claro"] .opciones button[aria-pressed=true] { background: var(--texto); color: #fff; }
+  html[data-tema="claro"] dialog { background: #fff; }
+  html[data-tema="claro"] dialog::backdrop { background: rgba(28,32,36,.35); }
+  html[data-tema="claro"] .encima { background-color: rgba(44,108,192,.06) !important; }
+  html[data-tema="claro"] :focus-visible { outline-color: var(--q2); }
+
   #estado { position: fixed; right: 16px; bottom: 6px; color: var(--tenue); font-size: 12px; }
   #estado.error { color: var(--q1); }
 
@@ -151,8 +209,17 @@
   .mini { height: 10px; background: var(--fondo); border-radius: 5px; overflow: hidden; }
   .mini i { display: block; height: 100%; background: var(--ok); }
 
+  @media (max-width: 1300px) { .plan ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 1100px) {
-    body { height: auto; display: block; font-size: 17px; }
+    body { height: auto; display: flex; flex-direction: column; font-size: 17px; }
+    /* en el celular las prioridades del día van primero, antes de cargar tareas */
+    .cabecera { display: contents; }
+    .cabecera > h1 { order: 0; padding: 14px 14px 0; }
+    .cabecera > .fecha { order: 0; padding: 2px 14px 0; }
+    .plan { order: 1; }
+    .cabecera > .nueva { order: 2; margin: 14px 14px 0; }
+    .cabecera > .botonera { order: 3; margin: 10px 14px 0; }
+    .foco { order: 4; } .bandeja { order: 5; } .cuerpo { order: 6; }
     .cabecera { padding: 10px 14px; }
     h1 { font-size: 26px; }
     .nueva { flex-wrap: wrap; flex-basis: 100%; }
@@ -163,8 +230,8 @@
     .proyecto { flex: 1 1 45%; }
     .bandeja { padding: 10px 14px 0; }
     .cuerpo { grid-template-columns: 1fr; padding: 10px 14px 40px; }
-    .plan { order: -1; }
-    .plan ol { max-height: none; }
+    .plan { grid-template-columns: 1fr; margin: 10px 14px 0; }
+    .plan ol { grid-template-columns: 1fr; }
     .matriz { grid-template-columns: 1fr; grid-template-rows: none; }
     .eje { display: none; }
     .cuadrante { min-height: 140px; }
@@ -190,10 +257,26 @@
     <input class="campo" type="date" id="nFecha" aria-label="Fecha">
     <button class="boton" type="submit">Agregar</button>
   </form>
-  <button class="boton sec" type="button" onclick="abrirRevision()">Revisión semanal</button>
-  <button class="boton sec" type="button" onclick="abrirRendimiento()">Mi rendimiento</button>
-  <span class="resumen" id="resumen"></span>
+  <div class="botonera">
+    <button class="boton sec" type="button" onclick="abrirRevision()">Revisión semanal</button>
+    <button class="boton sec" type="button" onclick="abrirRendimiento()">Mi rendimiento</button>
+    <button class="boton sec" type="button" id="bTema" onclick="cambiarTema()">Tema</button>
+    <span class="resumen" id="resumen"></span>
+  </div>
 </div>
+
+<section class="plan">
+  <div class="tope">
+    <h2>Prioridades del día</h2>
+    <div class="pestanas">
+      <button type="button" id="pHoy" onclick="elegirDia('hoy')">Hoy</button>
+      <button type="button" id="pManana" onclick="elegirDia('manana')">Mañana</button>
+    </div>
+    <p class="ayuda" id="ayudaPlan"></p>
+    <div class="agenda" id="agenda"></div>
+  </div>
+  <ol id="plan"></ol>
+</section>
 
 <section class="foco" id="foco"></section>
 
@@ -225,18 +308,6 @@
     </section>
   </main>
 
-  <aside class="plan">
-    <div class="tope">
-      <h2>Plan del día</h2>
-      <div class="pestanas">
-        <button type="button" id="pHoy" onclick="elegirDia('hoy')">Hoy</button>
-        <button type="button" id="pManana" onclick="elegirDia('manana')">Mañana</button>
-      </div>
-      <p class="ayuda" id="ayudaPlan"></p>
-      <div class="agenda" id="agenda"></div>
-    </div>
-    <ol id="plan"></ol>
-  </aside>
 </div>
 
 <dialog id="revision">
@@ -478,7 +549,7 @@
     $('pManana').textContent = 'Mañana ' + (D.manana ? textoFecha(D.manana) : '');
     $('ayudaPlan').textContent = dia === 'manana'
       ? 'Antes de dormir o a las 6: elegí hasta 6 tareas, la más importante primero. Arrastralas acá o tocá una tarea y sumala al plan.'
-      : 'Hacé una por vez, en orden. La que sigue está marcada en verde.';
+      : 'Hacé una por vez, en orden. La que sigue está resaltada.';
 
     pintarAgenda();
     var ol = $('plan'); ol.innerHTML = '';
@@ -803,6 +874,17 @@
     nota.textContent = 'La barra es cuánto del plan del día se cumplió.';
     c.appendChild(nota);
   }
+
+  function cambiarTema() {
+    var t = document.documentElement.dataset.tema === 'claro' ? 'noche' : 'claro';
+    document.documentElement.dataset.tema = t;
+    guardarLocal('prio_tema', t);
+    ponerNombreTema();
+  }
+  function ponerNombreTema() {
+    $('bTema').textContent = document.documentElement.dataset.tema === 'claro' ? 'Tema oscuro' : 'Tema claro';
+  }
+  ponerNombreTema();
 
   cargar();
   setInterval(function () { if (!document.querySelector('dialog[open]')) cargar(); }, 60000);   // se sincroniza solo cada minuto con lo que tildes en Google Tareas
