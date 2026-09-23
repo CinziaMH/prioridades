@@ -195,6 +195,8 @@
   .dia { background: transparent; border: 1px solid var(--linea); border-radius: 999px; padding: 4px 11px; font-size: 13px; color: var(--tenue); cursor: pointer; }
   .dia[aria-pressed=true] { background: var(--texto); border-color: var(--texto); color: var(--fondo); font-weight: 600; }
   html[data-tema="claro"] .dia[aria-pressed=true] { color: #fff; }
+  .tarjeta .sinfecha { color: var(--q3); font-weight: 600; }
+  .dias.falta .dia { border-color: var(--alerta); color: var(--alerta); }
   .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .nueva { flex-wrap: wrap; }
   #estado { position: fixed; right: 16px; bottom: 6px; color: var(--tenue); font-size: 12px; }
@@ -588,6 +590,8 @@
     if (t.vence) {
       if (!t.hecha && t.vence < D.hoy) datos.push(['vencida', 'Vencida ' + textoFecha(t.vence)]);
       else datos.push(['', t.vence === D.hoy ? 'Hoy' : textoFecha(t.vence)]);
+    } else if (!t.hecha) {
+      datos.push(['sinfecha', 'Falta fecha']);
     }
     if (enPlanHoy) datos.push(['en-plan', 'En el plan de hoy']);
     if (datos.length) {
@@ -704,6 +708,11 @@
     var leido = leerDiaDelTitulo(titulo);
     if (leido && leido.titulo) { titulo = leido.titulo; if (!fechaNueva) fechaNueva = leido.fecha; }
     if (!titulo) { $('titulo').focus(); return false; }
+    if (!fechaNueva) {
+      $('nDias').classList.add('falta');
+      estado('Elegí el día de la tarea: toda tarea lleva fecha.', true);
+      return false;
+    }
     estado('Agregando…');
     google.script.run.withSuccessHandler(function () {
       $('titulo').value = ''; elegirFechaNueva(''); cargar();
@@ -770,7 +779,8 @@
 
   // Opciones rápidas: sin fecha, hoy, mañana y los días de la semana que siguen.
   function opcionesDia() {
-    var ops = [['', 'Sin fecha'], [isoDe(sumarDias(0)), 'Hoy'], [isoDe(sumarDias(1)), 'Mañana']];
+    // Toda tarea lleva fecha: no hay opción "sin fecha".
+    var ops = [[isoDe(sumarDias(0)), 'Hoy'], [isoDe(sumarDias(1)), 'Mañana']];
     for (var i = 2; i <= 7; i++) {
       var d = sumarDias(i);
       ops.push([isoDe(d), DIAS[d.getDay()].charAt(0).toUpperCase() + DIAS[d.getDay()].slice(1) + ' ' + d.getDate()]);
@@ -802,7 +812,11 @@
     caja.appendChild(otra);
   }
 
-  function elegirFechaNueva(f) { fechaNueva = f; pintarDias($('nDias'), fechaNueva, elegirFechaNueva, 'nFecha'); }
+  function elegirFechaNueva(f) {
+    fechaNueva = f;
+    if (f) $('nDias').classList.remove('falta');
+    pintarDias($('nDias'), fechaNueva, elegirFechaNueva, 'nFecha');
+  }
 
   // Entiende el día escrito al final del título: "hoy", "mañana", "pasado mañana", "el viernes", "30/9".
   function leerDiaDelTitulo(texto) {
