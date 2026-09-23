@@ -16,7 +16,7 @@
 <style>
   :root {
     --fondo: #1d262d; --panel: #242f37; --linea: #33414b; --texto: #e7ecef; --tenue: #8fa0ab;
-    --q1: #e2583d; --q2: #4ea3dc; --q3: #e3a53b; --q4: #87939c; --ok: #5cb88a;
+    --q1: #f2f4f5; --alerta: #e2583d; --q2: #4ea3dc; --q3: #e3a53b; --q4: #87939c; --ok: #5cb88a;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
@@ -85,7 +85,7 @@
   .tarjeta input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--ok); cursor: pointer; }
   .tarjeta .titulo { font-size: 17px; font-weight: 500; }
   .tarjeta .datos { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--tenue); font-size: 13px; }
-  .tarjeta .vencida { color: var(--q1); font-weight: 600; }
+  .tarjeta .vencida { color: var(--alerta); font-weight: 600; }
   .tarjeta .en-plan { color: var(--ok); }
   .tarjeta.hecha { opacity: .5; }
   .tarjeta.hecha .titulo { text-decoration: line-through; }
@@ -136,7 +136,7 @@
   /* ---------- Tema claro minimalista ---------- */
   html[data-tema="claro"] {
     --fondo: #ffffff; --panel: #ffffff; --linea: #e7e9ec; --texto: #1c2024; --tenue: #7a828a;
-    --q1: #d4452f; --q2: #2c6cc0; --q3: #c7870f; --q4: #8d959c; --ok: #2f8f5b;
+    --q1: #1c2024; --alerta: #d4452f; --q2: #2c6cc0; --q3: #c7870f; --q4: #8d959c; --ok: #2f8f5b;
   }
   html[data-tema="claro"] body { font-family: Archivo, "Segoe UI", Arial, sans-serif; background: #f6f7f8; }
   html[data-tema="claro"] h1, html[data-tema="claro"] h2, html[data-tema="claro"] h3,
@@ -169,6 +169,7 @@
   html[data-tema="claro"] .mini { background: #eceef0; }
 
   html[data-tema="claro"] .cuadrante { background: #fff; border: 1px solid var(--linea); border-top: 3px solid var(--color); border-radius: 12px; }
+  html[data-tema="claro"] .cuadrante.q1 { border-top-width: 5px; background: #fcfcfd; }
   html[data-tema="claro"] .cuadrante.q2 { background: #fff; box-shadow: none; border-color: #cddcf0; border-top-color: var(--q2); }
   html[data-tema="claro"] .cuadrante h2 { font-size: 20px; font-weight: 700; }
   html[data-tema="claro"] .cuadrante .cuenta { font-size: 18px; font-weight: 500; color: var(--tenue); }
@@ -194,7 +195,7 @@
   .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .nueva { flex-wrap: wrap; }
   #estado { position: fixed; right: 16px; bottom: 6px; color: var(--tenue); font-size: 12px; }
-  #estado.error { color: var(--q1); }
+  #estado.error { color: var(--alerta); }
 
   /* Acciones sobre una tarea (sirve en el celular, donde no se puede arrastrar) */
   .hoja h3 { font: 600 16px "Barlow Condensed", Arial, sans-serif; color: var(--tenue); margin: 14px 0 6px; }
