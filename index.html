@@ -248,6 +248,14 @@
     .cuadrante .zona { overflow: visible; }
     .tarjeta input { width: 24px; height: 24px; }
   }
+
+  /* La página crece con el contenido y se desplaza normal: nada se encima aunque haya muchas tareas */
+  body { display: block !important; height: auto !important; min-height: 100vh; }
+  .plan, .foco, .bandeja { min-height: auto !important; }
+  .matriz { grid-template-rows: 20px auto auto; }
+  .cuadrante { min-height: 240px; }
+  .cuadrante .zona { overflow: visible; }
+  .cuerpo { padding-bottom: 40px; }
 </style>
 </head>
 <body>
