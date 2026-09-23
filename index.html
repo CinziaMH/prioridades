@@ -389,7 +389,7 @@
 <script>
   /* ---------- Conexión con el servidor (Apps Script) ----------
      Imita google.script.run para que el resto del código no cambie. */
-  var SERVIDOR = '';   // dirección /exec del Apps Script; si queda vacía se pide la primera vez
+  var SERVIDOR = 'https://script.google.com/macros/s/AKfycbyNr4UMRVKuk52sAPkn3ukW0cONKMu-Y9WZC4FxNZyppn0EkmKVGvyBFh5MxuSRCG6k1A/exec';   // dirección /exec del Apps Script; si queda vacía se pide la primera vez
   var FUNCIONES = ['datos', 'cambiarFecha', 'moverTarea', 'asignarProyecto', 'marcarTarea', 'agregarTarea', 'guardarPlan', 'guardarFoco', 'rendimiento'];
 
   function leerLocal(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
