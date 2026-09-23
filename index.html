@@ -437,7 +437,7 @@
           .then(function (r) { return r.json(); })
           .then(function (j) {
             if (j.ok) { alTerminar(j.resultado); return; }
-            if (j.error === 'Clave incorrecta') pedirConexion();
+            if (j.error === 'Clave incorrecta') { try { localStorage.removeItem('prio_clave'); } catch (e) {} pedirConexion(); }
             alFallar(new Error(j.error));
           })
           .catch(function () { alFallar(new Error('sin respuesta del servidor')); });
