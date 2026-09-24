@@ -62,7 +62,7 @@
   .bandeja .tarjeta { flex: 0 1 320px; }
 
   /* Cuerpo: matriz + plan del día */
-  .cuerpo { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 12px 24px 20px; min-height: 0; }
+  .cuerpo { display: block; gap: 16px; padding: 12px 24px 20px; min-height: 0; }
   .matriz { display: grid; gap: 12px; min-height: 0; grid-template-columns: 24px 1fr 1fr; grid-template-rows: 20px 1fr 1fr; }
   .eje { color: var(--tenue); font: 600 15px "Barlow Condensed", Arial, sans-serif; display: flex; align-items: center; justify-content: center; }
   .eje.v { writing-mode: vertical-rl; transform: rotate(180deg); }
@@ -195,6 +195,11 @@
   .dia { background: transparent; border: 1px solid var(--linea); border-radius: 999px; padding: 4px 11px; font-size: 13px; color: var(--tenue); cursor: pointer; }
   .dia[aria-pressed=true] { background: var(--texto); border-color: var(--texto); color: var(--fondo); font-weight: 600; }
   html[data-tema="claro"] .dia[aria-pressed=true] { color: #fff; }
+  .filtro-tiempo { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--tenue); font-size: 14px; }
+  .filtro-tiempo button { background: transparent; border: 1px solid var(--linea); border-radius: 999px; padding: 5px 14px; font-size: 14px; color: var(--texto); cursor: pointer; }
+  .filtro-tiempo button[aria-pressed=true] { background: var(--texto); color: var(--fondo); border-color: var(--texto); font-weight: 600; }
+  html[data-tema="claro"] .filtro-tiempo button[aria-pressed=true] { color: #fff; }
+  .plan li.separador { display: block; grid-column: 1 / -1; color: var(--tenue); font-size: 13px; font-weight: 600; border-top: 1px dashed var(--linea); padding-top: 8px; }
   .tarjeta .sinfecha { color: var(--q3); font-weight: 600; }
   .dias.falta .dia { border-color: var(--alerta); color: var(--alerta); }
   .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
@@ -297,6 +302,8 @@
   </div>
 </div>
 
+<section class="foco" id="foco"></section>
+
 <section class="plan">
   <div class="tope">
     <h2>Prioridades del día</h2>
@@ -310,10 +317,15 @@
   <ol id="plan"></ol>
 </section>
 
-<section class="foco" id="foco"></section>
 
 
 <div class="cuerpo">
+  <div class="filtro-tiempo" role="group" aria-label="Qué tareas mostrar">
+    <span>Mostrar:</span>
+    <button type="button" data-tiempo="todo">Todo</button>
+    <button type="button" data-tiempo="hoy">Hoy</button>
+    <button type="button" data-tiempo="semana">Esta semana</button>
+  </div>
   <main class="matriz">
     <div></div><div class="eje">Urgente</div><div class="eje">No urgente</div>
     <div class="eje v">Importante</div>
@@ -483,7 +495,7 @@
   var dia = new Date().getHours() >= 19 ? 'manana' : 'hoy';
   var DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   var COLOR = { 1: 'var(--q1)', 2: 'var(--q2)', 3: 'var(--q3)', 4: 'var(--q4)' };
-  var MAX_PLAN = 6;
+  var MAX_PLAN = 10;   // las primeras 6 son el núcleo del día; 7 a 10, si queda tiempo
 
   function $(id) { return document.getElementById(id); }
   function tarea(id) { return D.tareas.find(function (t) { return t.id === id; }); }
@@ -568,21 +580,32 @@
     }
   }
 
+  // Filtro de tiempo de la matriz: todo, hoy (incluye vencidas) o esta semana (hasta el domingo).
+  var tiempo = leerLocal('prio_tiempo') || 'todo';
+  function finDeSemana() {
+    var d = new Date(D.hoy + 'T12:00:00'); d.setDate(d.getDate() + ((7 - d.getDay()) % 7)); return isoDe(d);
+  }
+  function pasaTiempo(t) {
+    if (tiempo === 'todo' || t.hecha) return true;
+    if (!t.vence) return false;
+    return t.vence <= (tiempo === 'hoy' ? D.hoy : finDeSemana());
+  }
+  document.querySelectorAll('.filtro-tiempo button').forEach(function (b) {
+    b.onclick = function () { tiempo = b.dataset.tiempo; guardarLocal('prio_tiempo', tiempo); pintar(); };
+  });
   function pintarMatriz() {
+    document.querySelectorAll('.filtro-tiempo button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.tiempo === tiempo); });
     var enPlanHoy = D.planes[D.hoy] || [];
     [0, 1, 2, 3, 4].forEach(function (q) {
       var zona = document.querySelector('.zona[data-q="' + q + '"]'); zona.innerHTML = '';
-      var propias = D.tareas.filter(function (t) { return t.cuadrante === q && pasaFiltro(t); });
+      var propias = D.tareas.filter(function (t) { return t.cuadrante === q && pasaFiltro(t) && (q === 0 || pasaTiempo(t)); });
       var pend = propias.filter(function (t) { return !t.hecha; })
         .sort(function (a, b) { return (a.vence || '9999') < (b.vence || '9999') ? -1 : 1; });
       var hechas = propias.filter(function (t) { return t.hecha; })
         .sort(function (a, b) { return a.terminada < b.terminada ? 1 : -1; });
       pend.forEach(function (t) { zona.appendChild(tarjeta(t, enPlanHoy.indexOf(t.id) > -1)); });
       if (q && !pend.length) zona.insertAdjacentHTML('beforeend', '<div class="vacio">Nada pendiente acá.</div>');
-      if (q && hechas.length) {
-        zona.insertAdjacentHTML('beforeend', '<div class="hechas-sep">Hechas en la semana</div>');
-        hechas.forEach(function (t) { zona.appendChild(tarjeta(t, false)); });
-      }
+      // Las terminadas no se muestran en la matriz (se ven en la revisión semanal y en el rendimiento).
       if (q) document.querySelector('[data-cuenta="' + q + '"]').textContent = pend.length;
       else $('bandeja').classList.toggle('vacia', !pend.length);
     });
@@ -629,7 +652,7 @@
     $('pHoy').textContent = 'Hoy ' + (D.hoy ? textoFecha(D.hoy) : '');
     $('pManana').textContent = 'Mañana ' + (D.manana ? textoFecha(D.manana) : '');
     $('ayudaPlan').textContent = dia === 'manana'
-      ? 'Antes de dormir o a las 6: elegí hasta 6 tareas, la más importante primero. Arrastralas acá o tocá una tarea y sumala al plan.'
+      ? 'Antes de dormir o a las 6: elegí las tareas en orden, la más importante primero (las primeras 6 son las clave). Arrastralas acá o tocá una tarea y sumala al plan.'
       : 'Hacé una por vez, en orden. La que sigue está resaltada.';
 
     pintarAgenda();
@@ -639,6 +662,10 @@
 
     ids.forEach(function (id, i) {
       var t = tarea(id);
+      if (i === 6) {
+        var sep = document.createElement('li'); sep.className = 'separador';
+        sep.textContent = 'Si queda tiempo'; ol.appendChild(sep);
+      }
       var li = document.createElement('li');
       if (id === primeraPendiente && dia === 'hoy') li.className = 'ahora';
       li.innerHTML = '<span class="num">' + (i + 1) + '</span>';
@@ -693,7 +720,7 @@
     if (!tarea(id)) return;
     var ids = (D.planes[fechaDia()] || []).slice();
     var ya = ids.indexOf(id);
-    if (ya === -1 && ids.length >= MAX_PLAN) { estado('El plan ya tiene 6 tareas: sacá una antes de sumar otra.', true); return; }
+    if (ya === -1 && ids.length >= MAX_PLAN) { estado('El plan ya tiene 10 tareas: sacá una antes de sumar otra.', true); return; }
     if (ya > -1) { ids.splice(ya, 1); if (ya < posicion) posicion--; }
     ids.splice(posicion, 0, id);
     guardarPlan(ids);
@@ -711,6 +738,7 @@
 
   /* ---------- Acciones ---------- */
   function marcar(id, hecha) {
+    if (String(id).indexOf('nueva-') === 0) { estado('Se está guardando, probá en un segundo.'); pintar(); return; }
     var t = tarea(id);
     if (t) {
       t.hecha = hecha; t.terminada = hecha ? new Date().toISOString() : '';
@@ -731,10 +759,22 @@
       estado('Elegí el día de la tarea: toda tarea lleva fecha.', true);
       return false;
     }
-    estado('Agregando…');
-    google.script.run.withSuccessHandler(function () {
-      $('titulo').value = ''; elegirFechaNueva(''); cargar();
-    }).withFailureHandler(fallo).agregarTarea(titulo, +$('nCuadrante').value, fechaNueva, '', $('nProyecto').value);
+    // La tarea aparece al instante; se guarda de fondo y después se reemplaza por la definitiva.
+    var cuadrante = +$('nCuadrante').value, proyectoId = $('nProyecto').value, fecha = fechaNueva;
+    var provisoria = { id: 'nueva-' + Date.now(), titulo: titulo, nota: '', cuadrante: cuadrante,
+                       proyecto: proyectoId, vence: fecha, hecha: false, terminada: '' };
+    D.tareas.push(provisoria); pintar();
+    $('titulo').value = ''; elegirFechaNueva(''); $('titulo').focus();
+    enCurso++; estado('Guardando…');
+    google.script.run.withSuccessHandler(function (t) {
+      enCurso--;
+      var i = D.tareas.indexOf(provisoria); if (i > -1) D.tareas[i] = t;
+      pintar(); if (!enCurso) estado('Guardado');
+    }).withFailureHandler(function (e) {
+      enCurso--;
+      var i = D.tareas.indexOf(provisoria); if (i > -1) D.tareas.splice(i, 1);
+      pintar(); fallo(e);
+    }).agregarTarea(titulo, cuadrante, fecha, '', proyectoId);
     return false;
   }
 
@@ -892,7 +932,7 @@
   function eventoAlPlan(ev, boton) {
     var fecha = fechaDia();
     var ids = (D.planes[fecha] || []).slice();
-    if (ids.length >= MAX_PLAN) { estado('El plan ya tiene 6 tareas: sacá una antes de sumar otra.', true); return; }
+    if (ids.length >= MAX_PLAN) { estado('El plan ya tiene 10 tareas: sacá una antes de sumar otra.', true); return; }
     var existente = tareaDelEvento(ev);
     if (existente) { if (ids.indexOf(existente.id) === -1) cambiarPlan(fecha, ids.concat([existente.id])); return; }
     var titulo = (ev.hora ? ev.hora + ' ' : '') + ev.titulo;
@@ -916,6 +956,7 @@
   }
 
   function abrirAcciones(id) {
+    if (String(id).indexOf('nueva-') === 0) { estado('Se está guardando, probá en un segundo.'); return; }
     abierta = id;
     pintarAcciones();
     if (!$('acciones').open) $('acciones').showModal();
@@ -952,7 +993,7 @@
       var nombre = par[0] === 'hoy' ? 'hoy' : 'mañana';
       if (pos === -1) {
         opcion(pl, 'Sumar al plan de ' + nombre, false, 'var(--ok)', function () {
-          if (ids.length >= MAX_PLAN) { estado('El plan de ' + nombre + ' ya tiene 6 tareas.', true); return; }
+          if (ids.length >= MAX_PLAN) { estado('El plan de ' + nombre + ' ya tiene 10 tareas.', true); return; }
           cambiarPlan(par[1], ids.concat([t.id]));
         });
       } else {
