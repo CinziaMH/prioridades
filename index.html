@@ -200,6 +200,11 @@
   .filtro-tiempo button[aria-pressed=true] { background: var(--texto); color: var(--fondo); border-color: var(--texto); font-weight: 600; }
   html[data-tema="claro"] .filtro-tiempo button[aria-pressed=true] { color: #fff; }
   .plan li.separador { display: block; grid-column: 1 / -1; color: var(--tenue); font-size: 13px; font-weight: 600; border-top: 1px dashed var(--linea); padding-top: 8px; }
+  /* Botón Actualizar, arriba a la derecha */
+  body { position: relative; }
+  .cabecera { position: relative; padding-right: 150px; }
+  .actualizar { position: absolute; top: 12px; right: 16px; z-index: 5; background: var(--panel); border: 1px solid var(--linea); border-radius: 999px; padding: 6px 14px; font-size: 14px; color: var(--texto); cursor: pointer; }
+  @media (max-width: 1100px) { .actualizar { top: calc(env(safe-area-inset-top, 0px) + 12px); right: 14px; } }
   .tarjeta .sinfecha { color: var(--q3); font-weight: 600; }
   .dias.falta .dia { border-color: var(--alerta); color: var(--alerta); }
   .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
@@ -279,6 +284,7 @@
 <body>
 
 <div class="cabecera">
+  <button class="actualizar" type="button" onclick="actualizarYa()" aria-label="Actualizar el tablero">↻ Actualizar</button>
   <h1>Tablero de prioridades</h1>
   <span class="fecha" id="fecha"></span>
   <form class="nueva" onsubmit="return agregar(event)">
@@ -424,7 +430,7 @@
   /* ---------- Conexión con el servidor (Apps Script) ----------
      Imita google.script.run para que el resto del código no cambie. */
   var SERVIDOR = 'https://script.google.com/macros/s/AKfycbyNr4UMRVKuk52sAPkn3ukW0cONKMu-Y9WZC4FxNZyppn0EkmKVGvyBFh5MxuSRCG6k1A/exec';   // dirección /exec del Apps Script; si queda vacía se pide la primera vez
-  var FUNCIONES = ['datos', 'cambiarFecha', 'moverTarea', 'asignarProyecto', 'marcarTarea', 'agregarTarea', 'guardarPlan', 'guardarFoco', 'rendimiento'];
+  var FUNCIONES = ['datos', 'procesarPedidos', 'cambiarFecha', 'moverTarea', 'asignarProyecto', 'marcarTarea', 'agregarTarea', 'guardarPlan', 'guardarFoco', 'rendimiento'];
 
   function leerLocal(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function guardarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -520,6 +526,11 @@
   }
 
   /* ---------- Carga ---------- */
+  // Botón Actualizar: primero toma los pedidos que haya dejado Claude y después recarga.
+  function actualizarYa() {
+    enCurso = 0; estado('Actualizando…');
+    google.script.run.withSuccessHandler(function () { cargar(); }).withFailureHandler(function () { cargar(); }).procesarPedidos();
+  }
   function cargar() {
     if (enCurso) return;
     google.script.run.withSuccessHandler(function (datos) {
